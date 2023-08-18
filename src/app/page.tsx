@@ -10,8 +10,11 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { faMusic } from '@fortawesome/free-solid-svg-icons';
 import SpotifyWebApi from 'spotify-web-api-js';
 import axios from 'axios';
+import { ColorExtractor } from 'react-color-extractor';
 
-import { getTokenFromUrl, loginUrl, clientId, authEndpoint, redirectUri } from './spotify';
+
+import { getTokenFromUrl, loginUrl } from './spotify';
+import { IUser, IPlaylist } from '@/interfaces';
 
 const faPropIcon = faBook as IconProp;
 config.autoAddCss = false;
@@ -31,9 +34,12 @@ const loginModal = () => {
 const Home = () => {
 
   const [spotifyToken, setSpotifyToken] = useState<string>('');
+  const [user, setUser] = useState<IUser | null>(null);
   const [filter, setFilter] = useState<string>('');
-  const [playlists, setPlaylists] = useState<any>([]);
-  const [currPlaylist, setCurrPlaylist] = useState<any>({});
+  const [playlists, setPlaylists] = useState<IPlaylist[] | []>([]);
+  const [currPlaylist, setCurrPlaylist] = useState<IPlaylist | null>(null);
+  const [playlistImage, setPlaylistImage] = useState<string>('');
+  const [bgColor, setBgColor] = useState<string>('');
   
 
   const responseTime = process.env.REACT_APP_SPOTIFY_RESPONSE_TYPE;
@@ -51,6 +57,29 @@ const Home = () => {
     })
   }
 
+  const getColors = (colors: any) => {
+    console.log("LOT::", colors[0])
+    setBgColor(colors[0]);
+  }
+
+  const setNewPlaylist = (playlist: any) => {
+    setCurrPlaylist(playlist);
+    setPlaylistImage(playlist.images[0]?.url)
+  }
+
+  const renderUserInfo = () => {
+
+    if(user) {
+      return (
+        <div className='flex row absolute items-center bottom-0'>
+          <div className='w-5 h-5 rounded-full' style={{background: `url(${user.images[0]?.url})`, backgroundSize: 'cover'}}></div>
+          <p className='ml-2'>{user.display_name}</p>
+          {currPlaylist && currPlaylist.tracks && <p className='ml-2'>{currPlaylist.tracks.total} songs</p>}
+        </div>
+      )
+    }
+  }
+
   const renderPlaylistImg = (image: string) => {
     if(image) {
       return <div style={{
@@ -65,9 +94,13 @@ const Home = () => {
 
   const renderPlaylists = () => {
     console.log("LISTS:", playlists)
-    return playlists.map((playlist: any) => {
+    return playlists.map((playlist: IPlaylist) => {
       return (
-        <div key={playlist.id} className='flex row mt-5 mb-3'>
+        <div 
+          key={playlist.id} 
+          className='flex row rounded cursor-pointer p-2 mb-1 hover:bg-neutral-700'
+          onClick={() => setNewPlaylist(playlist)}
+        >
           {renderPlaylistImg(playlist.images[0]?.url)}
 
           <div className='ml-3'>
@@ -82,9 +115,8 @@ const Home = () => {
 
   useEffect(() => {
 
-
     let fetched = false;
-
+    console.log("USER:", user)
     if(!fetched) {
       const _spotifyToken = getTokenFromUrl().access_token;
       // window.location.hash = "";
@@ -102,6 +134,7 @@ const Home = () => {
         let playlists = data?.items;
         setPlaylists(playlists);
         setCurrPlaylist(playlists[0])
+        setPlaylistImage(currPlaylist?.images[0]?.url);
       }
   
       if(_spotifyToken) {
@@ -112,6 +145,7 @@ const Home = () => {
         spotify.getMe().then((user) => {
           console.log("DIS YOU:", user)
           fetchData(user.id)
+          setUser(user)
 
           fetched = true;
         })
@@ -123,10 +157,10 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* {loginModal()} */}
-      <nav className="w-80 m-2 p-5 flex-none rounded-2xl bg-neutral-900">
+      {loginModal()}
+      <nav className="w-80 m-2flex-none rounded-xl bg-neutral-900 m-3">
         
-        <div className='flex justify-between row'>
+        <div className='flex justify-between row p-5'>
           <div className='flex row opacity-60'>
             <FontAwesomeIcon size="lg" icon={faBook}/>
             <p className='ml-2 font-bold'>Your Library</p>
@@ -137,20 +171,24 @@ const Home = () => {
           </div>
         </div>
 
-        {renderPlaylists()}
+        <div className='p-3'>
+          {renderPlaylists()}
+        </div>
         
       </nav>
 
-    <main className="flex-1 min-w-0 overflow-auto">
-      <div className='flex row p-5'>
-        <div style={{
-          height: "200px", 
-          width: "200px", 
-          backgroundImage: `url(${currPlaylist?.images[0]?.url})`, backgroundSize: 'cover'
-        }} className='rounded'>
-        </div>
+    <main className="flex-1 min-w-0 overflow-auto p-3 pl-0">
+      <div  style={{background: `linear-gradient(to bottom, ${bgColor}, #000)`}} className={`flex row rounded-xl p-5`}>
+        <ColorExtractor getColors={getColors}><img className='w-60' src={playlistImage} /></ColorExtractor>
+        {currPlaylist && <div className='flex column items-center relative ml-3'>
+          <p className='absolute top-0 text-xs'>Playlist</p>
+          <p className='leading[2.7rem] text-5xl font-bold'>{currPlaylist.name}</p>
+          {currPlaylist.description && <p className='absolute leading-3 text-xs opacity-60 bottom-7 mb-1'>{currPlaylist.description}</p>}
+          {user && user.images && renderUserInfo()}
+        </div>}
+
         <div>
-          <p className='text-2xl font-bold ml-3'>{currPlaylist.name}</p>
+
         </div>
       </div>
 
