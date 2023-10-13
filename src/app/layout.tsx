@@ -1,5 +1,5 @@
 import React from "react"
-import Script from 'next/script'
+// import Script from 'next/script'
 import type { Metadata } from 'next'
 
 
@@ -18,9 +18,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+
+  
   return (
     <html lang="en">
-      <Script src="https://sdk.scdn.co/spotify-player.js" />
       <body className={inter.className}>{children}</body>
     </html>
   )
