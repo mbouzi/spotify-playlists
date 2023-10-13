@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Dispatch } from "react";
 import dynamic from 'next/dynamic';
 import SpotifyWebApi from 'spotify-web-api-js';
 import Moment from 'moment';
@@ -45,6 +45,7 @@ const columnTitles = [
 interface SongTableProps {
     playlistId: string;
     spotifyToken: string;
+    setCurrentSong: Dispatch<any>;
 }
 
 // interface DraggableLocation {
@@ -90,7 +91,7 @@ export const useStrictDroppable = (loading: boolean) => {
 
 
 
-const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken}) => {
+const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, setCurrentSong}) => {
     const [songs, setSongs] = useState<any[]>([]);
 
 
@@ -110,7 +111,6 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken}) => {
         }
 
         if(data.artists) {
-            console.log("HIT")
             let artistText = "";
             const artists = data.artists;
 
@@ -121,7 +121,7 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken}) => {
                     artistText += (artists[i].name + ", ");
                 }
             }
-            console.log("NEW:", artistText)
+
             return shortenLogic(artistText)
         } else {
             return shortenLogic(data)
@@ -142,7 +142,6 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken}) => {
 
     const renderSongInfo = (value: any, index: number) => {
         if(index === 1) {
-            console.log("VALUE:", value.artists)
             return (
                 <td 
                     key={index} 
@@ -154,7 +153,7 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken}) => {
                         className="w-[40px] h-[40px]"
                     />
                     <div className="flex flex-col ml-2">
-                        <p>{shortenText(value.name)}</p>
+                        <p onClick={() => setCurrentSong(value)} className="hover:underline">{shortenText(value.name)}</p>
                         <p className="opacity-60  whitespace-nowrap">{shortenText(value)}</p>
                     </div>
                     
