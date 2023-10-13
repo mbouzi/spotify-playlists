@@ -1,7 +1,6 @@
 
 export interface IUser {
     display_name: string;
-    external_url: any;
     followers: any;
     href: string;
     id: string;
@@ -13,7 +12,7 @@ export interface IUser {
 export interface IPlaylist {
     collaborative: boolean;
     description: string;
-    external_urls: unknown;
+    external_urls: any;
     href: string;
     id: string;
     images: any[];
