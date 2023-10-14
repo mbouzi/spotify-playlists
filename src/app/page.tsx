@@ -9,11 +9,13 @@ import SpotifyWebApi from 'spotify-web-api-js';
 // import axios from 'axios';
 import { ColorExtractor } from 'react-color-extractor';
 import Link from 'next/link';
+// import SpotifyPlayer from 'react-spotify-web-playback';
 
 import { getTokenFromUrl, loginUrl } from '../spotify';
 import { IUser, IPlaylist } from '@/interfaces';
-import Sidebar from '@/components/sidebar';
-import SongTable from '@/components/songTable';
+import Sidebar from '@/components/Sidebar';
+import SongTable from '@/components/SongTable';
+// import SongPlayer from '@/components/SongPlayer';
 
 // const faPropIcon = faBook as IconProp;
 config.autoAddCss = false;
@@ -39,6 +41,7 @@ const Page = () => {
   const [currPlaylist, setCurrPlaylist] = useState<IPlaylist | null>(null);
   const [playlistImage, setPlaylistImage] = useState<string>('');
   const [bgColor, setBgColor] = useState<string>('');
+  const [currentSong, setCurrentSong] = useState<any>(null);
   
 
   // const responseTime = process.env.REACT_APP_SPOTIFY_RESPONSE_TYPE;
@@ -57,7 +60,6 @@ const Page = () => {
   // }
 
   const getColors = (colors: string[]) => {
-    console.log("COLORS:", colors)
     setBgColor(colors[0]);
   }
 
@@ -72,8 +74,9 @@ const Page = () => {
       return (
         <div className='flex row absolute items-center bottom-0'>
           <div className='w-5 h-5 rounded-full' style={{background: `url(${user.images[0]?.url})`, backgroundSize: 'cover'}}></div>
-          <p className='ml-2'>{user.display_name}</p>
-          {currPlaylist && currPlaylist.tracks && <p className='ml-2'>{currPlaylist.tracks.total} songs</p>}
+          <p className='whitespace-nowrap ml-2'>{user.display_name}</p>
+          <p className='ml-2'>•</p>
+          {currPlaylist && currPlaylist.tracks && <p className='whitespace-nowrap ml-2'>{currPlaylist.tracks.total} songs</p>}
         </div>
       )
     }
@@ -84,16 +87,14 @@ const Page = () => {
     let fetched = false;
 
     if(!fetched) {
-      const _spotifyToken = getTokenFromUrl().access_token;
-      // window.location.hash = "";
       
-  
+      const _spotifyToken = getTokenFromUrl().access_token;
+
       const fetchData = async (userId: string) => {
         spotify.getUserPlaylists(userId).then((data: any) => {
           const fetchedPlaylists = data?.items;
           setPlaylists(fetchedPlaylists);
           setCurrPlaylist(fetchedPlaylists[0])
-          console.log("CURR:",fetchedPlaylists[0] )
           setPlaylistImage(currPlaylist?.images[0]?.url);
         }).catch(err => console.log("ERR:", err))
       
@@ -116,13 +117,21 @@ const Page = () => {
   }, [spotifyToken])
 
   return (
-    <div className="min-h-screen flex">
-      {loginModal()}
-
-      <Sidebar playlists={playlists} setNewPlaylist={setNewPlaylist} />
-      <main className="flex-1 min-w-0 overflow-auto p-3 pl-0">
-        <div  style={{background: `linear-gradient(to bottom, ${bgColor}, #000)`}} className={`flex row rounded-xl p-5`}>
-         {playlistImage && <ColorExtractor getColors={getColors}><img className='w-60' src={playlistImage} /></ColorExtractor>}
+    <div className="min-h-screen flex overflow-hidden">
+      {!user && loginModal()}
+      <Sidebar 
+        playlists={playlists} 
+        setNewPlaylist={setNewPlaylist} 
+      />
+      <main 
+        style={{background: `linear-gradient(to bottom, ${bgColor}, #000)`}} 
+        className="h-[100vh] rounded flex-1 min-w-0 overflow-auto m-4 p-5 ml-0"
+      >
+        <div  className={`flex row rounded-xl`}>
+         {playlistImage && 
+          <ColorExtractor getColors={getColors}>
+            <img className='w-60' src={playlistImage} />
+          </ColorExtractor>}
           {currPlaylist && 
           <div className='flex column items-center relative ml-3'>
             <p className='absolute top-0 text-xs'>Playlist</p>
@@ -132,8 +141,16 @@ const Page = () => {
           </div>}
         </div>
 
-        {currPlaylist && <SongTable playlistId={currPlaylist.id} spotifyToken={spotifyToken} />}
+        {/* need to check for premium */}
+        <div style={{marginTop: "20px"}}>
+          {/* <SpotifyPlayer
+            token={spotifyToken}
+            uris={['spotify:artist:6HQYnRM4OzToCYPpVBInuU']}
+          /> */}
+          {/* <SongPlayer currentSong={currentSong} token={spotifyToken} /> */}
+        </div>
         
+        {currPlaylist && <SongTable setCurrentSong={setCurrentSong} playlistId={currPlaylist.id} spotifyToken={spotifyToken} />}
       </main>
     </div>
   )

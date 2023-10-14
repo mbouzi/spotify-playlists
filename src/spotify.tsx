@@ -6,7 +6,13 @@ export const redirectUri = process.env.SPOTIFY_REDIRECT_URI;
 export const clientId = process.env.SPOTIFY_CLIENT_ID;
 
 const scopes  = [
-  ""
+  "streaming",
+  "user-modify-playback-state",
+  "user-library-modify",
+  "app-remote-control",
+  'playlist-modify-public',
+  'user-read-playback-state',
+  'user-read-currently-playing'
 ]
 
 export const loginUrl = `${authEndpoint}?

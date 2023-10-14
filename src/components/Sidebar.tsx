@@ -35,10 +35,9 @@ const Sidebar:React.FC<SidebarProps> = ({playlists, setNewPlaylist}) => {
               onClick={() => setNewPlaylist(playlist)}
             >
               {renderPlaylistImg(playlist.images[0]?.url)}
-    
               <div className='ml-3'>
                 <p className='text-base mb-1'>{playlist.name}</p>
-                <p className='text-sm opacity-60'>Playlist - {playlist.owner.display_name}</p>
+                <p className='text-sm opacity-60'>Playlist • {playlist.owner.display_name}</p>
               </div>
             </div>
           )
@@ -47,22 +46,18 @@ const Sidebar:React.FC<SidebarProps> = ({playlists, setNewPlaylist}) => {
 
     return (
         <nav className="w-80 m-2flex-none rounded-xl bg-neutral-900 m-3">
-        
-        <div className='flex justify-between row p-5'>
-          <div className='flex row opacity-60'>
-            <FontAwesomeIcon size="lg" icon={faBook}/>
-            <p className='ml-2 font-bold'>Your Library</p>
+          <div className='flex justify-between row p-5'>
+            <div className='flex row opacity-60'>
+              <FontAwesomeIcon size="lg" icon={faBook}/>
+              <p className='ml-2 font-bold'>Your Library</p>
+            </div>
+            <div className='opacity-60'>
+              <FontAwesomeIcon size="lg" icon={faPlus}/>
+            </div>
           </div>
-          
-          <div className='opacity-60'>
-            <FontAwesomeIcon size="lg" icon={faPlus}/>
+          <div className='p-3 h-[100vh] overflow-y-scroll'>
+            {renderPlaylists()}
           </div>
-        </div>
-
-        <div className='p-3'>
-          {renderPlaylists()}
-        </div>
-        
       </nav>
     )
 }
