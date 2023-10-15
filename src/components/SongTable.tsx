@@ -1,42 +1,75 @@
-import React, { useEffect, useState, Dispatch } from "react";
+import React, { useEffect, useState, Dispatch } from 'react';
 import dynamic from 'next/dynamic';
 import SpotifyWebApi from 'spotify-web-api-js';
 import Moment from 'moment';
-import 'moment/locale/pt-br';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
 
-import { msToTime } from "../utils"
+import { msToTime, shortenText } from '@/modules/utils';
+import { SpotifySong, SpotifyPlaylistSong, SpotifyPlaylist } from '@/types';
+
 
 const spotify = new SpotifyWebApi();
-Moment.locale('en');
-
 
 const DragDropContext: any = dynamic(
     () =>
-      import('@hello-pangea/dnd').then(mod => {
-        return mod.DragDropContext;
-      }),
-    {ssr: false},
-  );
+        import('@hello-pangea/dnd').then((mod) => {
+            return mod.DragDropContext;
+        }),
+    { ssr: false },
+);
 
-  const Draggable: any = dynamic(
+const Draggable: any = dynamic(
     () =>
-      import('@hello-pangea/dnd').then(mod => {
-        return mod.Draggable;
-      }),
-    {ssr: false},
-  );
+        import('@hello-pangea/dnd').then((mod) => {
+            return mod.Draggable;
+        }),
+    { ssr: false },
+);
 
-  const Droppable: any = dynamic(
+const Droppable: any = dynamic(
     () =>
-      import('@hello-pangea/dnd').then(mod => {
-        return mod.Droppable;
-      }),
-    {ssr: false},
-  );
+        import('@hello-pangea/dnd').then((mod) => {
+            return mod.Droppable;
+        }),
+    { ssr: false },
+);
 
-const columnTitles = [
+
+interface SongTableProps {
+    spotifyToken: string;
+    currentSong: SpotifySong | null;
+    currentPlaylist: SpotifyPlaylist | null;
+    setCurrentSong: Dispatch<any>;
+}
+
+interface IDraggableLocation {
+    droppableId: string;
+    index: number;
+}
+
+interface ICombine {
+    draggableId: string;
+    droppableId: string;
+}
+
+interface IDragResult {
+    reason: 'DROP' | 'CANCEL';
+    destination?: IDraggableLocation;
+    source: IDraggableLocation;
+    combine?: ICombine;
+    mode: 'FLUID' | 'SNAP';
+    draggableId: string;
+}
+
+const renderColumnWidth = (index: number): string => {
+    if (index === 1 || index === 2) return '40%';
+    if (index > 1) return '20%';
+
+    return 'inherit';
+};
+
+const playlistColumnTitles = [
     "#",
     "Title",
     "Album",
@@ -44,241 +77,177 @@ const columnTitles = [
     "Length"
 ]
 
-interface SongTableProps {
-    playlistId: string;
-    spotifyToken: string;
-    currentSong: any;
-    setCurrentSong: Dispatch<any>;
-}
-
-// interface DraggableLocation {
-//     droppableId: string;
-//     index: number;
-// }
-
-// interface Combine {
-//     draggableId: string;
-//     droppableId: string;
-// }
-
-// interface DragResult {
-//     reason: 'DROP' | 'CANCEL';
-//     destination?: DraggableLocation;
-//     source: DraggableLocation;
-//     combine?: Combine;
-//     mode: 'FLUID' | 'SNAP';
-//     draggableId: string;
-// }
-
-
-
-export const useStrictDroppable = (loading: boolean) => {
-    const [enabled, setEnabled] = useState(false);
-  
-    useEffect(() => {
-      let animation: any;
-  
-      if (!loading) {
-        animation = requestAnimationFrame(() => setEnabled(true));
-      }
-  
-      return () => {
-        cancelAnimationFrame(animation);
-        setEnabled(false);
-      };
-    }, [loading]);
-  
-    return [enabled];
-};
-
-
-
-
-const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, currentSong, setCurrentSong}) => {
-    const [songs, setSongs] = useState<any[]>([]);
-    const [songHovered, setSongHovered] = useState<any>(null);
-
-
-    const renderColumnWidth = (index: number) => {
-        if(index === 1 || index === 2) return "40%";
-        if(index > 1) return "20%";
-
-        return "inherit";
-    }
-
-    const shortenText = (data: any) => {
-
-        const shortenLogic = (text: any) => {
-            if(text.length > 20) return text.slice(0, 25) + " ...";
-
-            return text;
-        }
-
-        if(data.artists) {
-            let artistText = "";
-            const artists = data.artists;
-
-            for(let i = 0; i < artists.length; i++) {
-                if(artists.length === 1 || i === artists.length - 1 ) {
-                    artistText += (artists[i].name + " ")
-                } else {
-                    artistText += (artists[i].name + ", ");
-                }
-            }
-
-            return shortenLogic(artistText)
-        } else {
-            return shortenLogic(data)
-        }
-    }
-
-    const renderTitle = (title: string, index: number) => {
+const SongTable: React.FC<SongTableProps> = ({ spotifyToken, currentSong, setCurrentSong, currentPlaylist }): React.ReactElement => {
+    const [songs, setSongs] = useState<SpotifySong[]>([]);
+    const [songHovered, setSongHovered] = useState<SpotifySong | null>(null);
+    const [songsFetched, setSongsFetched] = useState<boolean>(false);
+    
+    const renderTitle = (title: string, index: number): React.ReactNode => {
         return (
-            <th 
+            <th
                 key={index}
-                style={{width: renderColumnWidth(index)}} 
+                style={{ width: renderColumnWidth(index) }}
                 className={`whitespace-nowrap border-none opacity-60 text-sm font-normal text-left px-4 py-2 pt-3`}
             >
                 {title}
             </th>
-        )
-    }
+        );
+    };
 
-    const renderSongInfo = (value: any, index: number, highlight: boolean) => {
-
-        if(index === 1) {
+    const renderSongInfo = (value: any, index: number, highlight: boolean): React.ReactNode => {
+        if (index === 1) {
             return (
-                <td 
-                    key={index} 
-                    style={{width: renderColumnWidth(index)}}
-                    className={`flex whitespace-wrap border-none px-4 py-2 text-sm cursor-pointer`}
+                <td
+                    key={index}
+                    style={{ width: renderColumnWidth(index) }}
+                    className={`flex whitespace-wrap border-none px-4 py-2 text-sm ${!songsFetched ? "cursor-not-allowed": "cursor-pointer"}`}
                 >
-                    <img 
-                        src={value.album.images.length > 0 ? value.album.images.filter((img: any) => img.height === 64)[0].url : value.album.images[0].url} 
+                    <img
+                        src={
+                            value.album.images.length > 0
+                                ? value.album.images.filter((img: any) => img.height === 64)[0].url
+                                : value.album.images[0].url
+                        }
                         className="w-[40px] h-[40px]"
                     />
                     <div className="flex flex-col ml-2">
-                        <p 
-                            onClick={() => setCurrentSong(value)} 
+                        <p
+                            onClick={!songsFetched ? (e: React.MouseEvent<HTMLElement>) => e.stopPropagation() : () => setCurrentSong(value)}
                             className="hover:underline"
-                            style={{color: highlight && index < 2 ? "#1ED760" : "#fff"}}
-                        >{shortenText(value.name)}</p>
+                            style={{ color: highlight && index < 2 ? 'var(--spotify-green)' : '#fff' }}
+                        >
+                            {shortenText(value.name)}
+                        </p>
                         <p className="opacity-60  whitespace-nowrap">{shortenText(value)}</p>
                     </div>
-                    
                 </td>
-            )
+            );
         }
 
         return (
-            <td 
-                key={index} 
-                style={{width: renderColumnWidth(index), color: highlight && index < 2 ? "#1ED760" : "#fff9"}}
-                className={`whitespace-wrap border-none px-4 py-2 text-sm cursor-pointer`}
+            <td
+                key={index}
+                style={{ width: renderColumnWidth(index), color: highlight && index < 2 ? 'var(--spotify-green)' : '#fff9' }}
+                className={`whitespace-wrap border-none px-4 py-2 text-sm cursor-pointer ${index === 0 ? "max-w-[40px]" : "asdas"}`}
             >
                 {value}
             </td>
+        );
+    };
+
+    const renderDraggableSong = (track: SpotifySong, song: SpotifyPlaylistSong, trackId: number, index: number, highLight: boolean): React.ReactNode => {
+        return (
+            <Draggable key={trackId + index} draggableId={trackId} index={index}>
+                {(provided: any, snapshot: any) => (
+                    <tr
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={`flex row rounded bg-transparent ${
+                            snapshot.draggingOver
+                                ? 'border-b border-green-400 rounded-b-none '
+                                : 'border-b-0'
+                        } ${
+                            snapshot.isDragging ? 'bg-blue' : 'bg-black'
+                        } cursor-pointer hover:bg-[#fff3]`}
+                        // tabIndex={0}
+                        key={trackId + index}
+                        onMouseOver={() => setSongHovered(track)}
+                        onMouseLeave={() => setSongHovered(null)}
+                    >
+                        {songHovered?.name === track.name
+                            ? renderSongInfo(
+                                    <FontAwesomeIcon
+                                        className="mt-3"
+                                        size="sm"
+                                        icon={faPlay}
+                                    />,
+                                    0,
+                                    highLight,
+                                )
+                            : renderSongInfo(index + 1, 0, highLight)}
+                            {renderSongInfo(track, 1, highLight)}
+                            {renderSongInfo(track.album?.name, 2, highLight)}
+                            {renderSongInfo(
+                            Moment(song.added_at).format('MMM d, YYYY'),
+                            3,
+                            highLight,
+                        )}
+                        {renderSongInfo(msToTime(track.duration_ms), 4, highLight)}
+                    </tr>
+                )}
+            </Draggable>
         )
     }
 
-    const removeFromList = (list: any, index: any) => {  
-        const result = Array.from(list);  
-        const [removed] = result.splice(index, 1);  
-        return [removed, result]  
-    }  
-    
-    const addToList = (list: any, index: any, element: any) => {  
-        const result = Array.from(list);  
-        result.splice(index, 0, element);
-        return result  
-    }
+    const onDragEnd = (result: IDragResult): void => {
 
-    const onDragEnd = (result: any) => {  
-        if (!result.destination) {  
+        if (!result.destination || !currentPlaylist) {  
             return;  
         }  
-        const listCopy: any = { ...songs }  
-        const sourceList = listCopy[result.source.droppableId]  
-    
-        const [removedElement, newSourceList] = removeFromList(sourceList, result.source.index)  
-        listCopy[result.source.droppableId] = newSourceList  
-    
-        const destinationList = listCopy[result.destination.droppableId]  
-        listCopy[result.destination.droppableId] = addToList(destinationList, result.destination.index, removedElement)  
-        setSongs(listCopy)
-    }
 
-   
+        const playlistId = currentPlaylist.id,
+        rangeStart = ~~result.source.index;
+
+        let insertBefore = ~~result?.destination?.index;
+
+        if(rangeStart < insertBefore) insertBefore += 1;
+
+        spotify.reorderTracksInPlaylist(playlistId, rangeStart, insertBefore).then(() =>  setSongsFetched(false))
+        setSongsFetched(false)
+    };
+
     useEffect(() => {
-
-        let fetched = false;
-
-        if(!fetched && playlistId && spotifyToken) {
-
-            spotify.getPlaylistTracks(playlistId).then((data: any) => {
-                const fetchedSongs = data?.items;
-                setSongs(fetchedSongs)
-                fetched = true;
-            }).catch(err => console.log("ERR:", err))
-           
-        } 
-
-       
-    }, [spotifyToken, playlistId])
+        if (currentPlaylist?.id && spotifyToken) {
+            spotify
+                .getPlaylistTracks(currentPlaylist.id)
+                .then((data: any) => {
+                    const fetchedSongs: SpotifySong[] = data?.items;
+                    setSongs(fetchedSongs);
+                    setSongsFetched(true)
+                })
+                .catch((err) => console.log('ERR:', err));
+        }
+    }, [spotifyToken, currentPlaylist, songsFetched]);
 
     return (
-        <div>
+        <div 
+            style={{ background: `linear-gradient(to top, #000, #0006)` }} 
+            className={`
+                ${songs.length < 20 ? "h-full" : ""} 
+                ${!songsFetched ? "opacity-50" : ""} 
+                p-5`
+            }
+        >
             <table className="w-full border-none mt-5">
                 <thead className="border-b border-[#aaa3]">
                     <tr className="flex">
-                        {columnTitles.map((title: string, index: number) => renderTitle(title, index))}
+                        {playlistColumnTitles.map((title: string, index: number) => renderTitle(title, index))}
                     </tr>
                 </thead>
-                    
-                <DragDropContext onDragEnd={(result: any) => onDragEnd(result)}>  
+
+                <DragDropContext onDragEnd={(result: IDragResult) => onDragEnd(result)}>
                     <Droppable droppableId="droppable">
-                        {(provided: any) =>(
-                        <tbody
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className="relative top-[15px]"
-                        >
-                        {songs && songs.map((song: any, index: number) => {
-                            const { track } = song;
-                            const trackId = track.id + index;
-                            const highLight = currentSong?.name.toLowerCase() === track.name.toLowerCase();
+                        {(provided: any) => (
+                            <tbody ref={provided.innerRef} {...provided.droppableProps} className="relative top-[15px]">
+                                {songs &&
+                                    songs.map((song: any, index: number) => {
+                                        const { track } = song, 
+                                        trackId = track.id + index,
+                                        highLight = currentSong?.name.toLowerCase() === track.name.toLowerCase();
 
-                            return (
-
-                                <Draggable key={trackId}  draggableId={trackId} index={index}>  
-                                    {(provided: any, snapshot: any) => (
-                                        <tr  
-                                            ref={provided.innerRef}  
-                                            {...provided.draggableProps}  
-                                            {...provided.dragHandleProps}
-                                            className={`flex row rounded bg-transparent ${snapshot.draggingOver ? "border-b border-green-400 rounded-b-none " : "border-b-0"} ${snapshot.isDragging ? "bg-blue" : "bg-black"} cursor-pointer hover:bg-[#fff3]`}
-                                            // tabIndex={0}
-                                            key={trackId + index}
-                                            onMouseOver={() => setSongHovered(track)}
-                                            onMouseLeave={() => setSongHovered(null)}
-                                        >  
-                                                {songHovered?.name === track.name ? renderSongInfo(<FontAwesomeIcon className="mt-3" size="sm" icon={faPlay}/>, 0, highLight) : renderSongInfo(index + 1, 0, highLight)}
-                                                {renderSongInfo(track, 1, highLight)}
-                                                {renderSongInfo(track.album?.name, 2, highLight)}
-                                                {renderSongInfo(Moment(song.added_at).format('MMM d, YYYY'), 3, highLight)}
-                                                {renderSongInfo(msToTime(track.duration_ms), 4, highLight)}
-                                        </tr>  
-                                    )}  
-                                </Draggable>
-                            )
-                        })}
-                        </tbody>
+                                        return (
+                                            renderDraggableSong(track, song, trackId, index, highLight)
+                                        );
+                                    })}
+                                    {provided.placeholder}
+                            </tbody>
                         )}
                     </Droppable>
                 </DragDropContext>
             </table>
         </div>
-    )
-}
+    );
+};
 
 export default SongTable;
