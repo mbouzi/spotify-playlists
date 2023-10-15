@@ -3,6 +3,8 @@ import dynamic from 'next/dynamic';
 import SpotifyWebApi from 'spotify-web-api-js';
 import Moment from 'moment';
 import 'moment/locale/pt-br';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlay } from '@fortawesome/free-solid-svg-icons';
 
 import { msToTime } from "../utils"
 
@@ -12,7 +14,7 @@ Moment.locale('en');
 
 const DragDropContext: any = dynamic(
     () =>
-      import('react-beautiful-dnd').then(mod => {
+      import('@hello-pangea/dnd').then(mod => {
         return mod.DragDropContext;
       }),
     {ssr: false},
@@ -20,7 +22,7 @@ const DragDropContext: any = dynamic(
 
   const Draggable: any = dynamic(
     () =>
-      import('react-beautiful-dnd').then(mod => {
+      import('@hello-pangea/dnd').then(mod => {
         return mod.Draggable;
       }),
     {ssr: false},
@@ -28,7 +30,7 @@ const DragDropContext: any = dynamic(
 
   const Droppable: any = dynamic(
     () =>
-      import('react-beautiful-dnd').then(mod => {
+      import('@hello-pangea/dnd').then(mod => {
         return mod.Droppable;
       }),
     {ssr: false},
@@ -39,12 +41,13 @@ const columnTitles = [
     "Title",
     "Album",
     "Date added",
-    "Time"
+    "Length"
 ]
 
 interface SongTableProps {
     playlistId: string;
     spotifyToken: string;
+    currentSong: any;
     setCurrentSong: Dispatch<any>;
 }
 
@@ -91,8 +94,9 @@ export const useStrictDroppable = (loading: boolean) => {
 
 
 
-const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, setCurrentSong}) => {
+const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, currentSong, setCurrentSong}) => {
     const [songs, setSongs] = useState<any[]>([]);
+    const [songHovered, setSongHovered] = useState<any>(null);
 
 
     const renderColumnWidth = (index: number) => {
@@ -140,7 +144,8 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, setCurren
         )
     }
 
-    const renderSongInfo = (value: any, index: number) => {
+    const renderSongInfo = (value: any, index: number, highlight: boolean) => {
+
         if(index === 1) {
             return (
                 <td 
@@ -153,18 +158,23 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, setCurren
                         className="w-[40px] h-[40px]"
                     />
                     <div className="flex flex-col ml-2">
-                        <p onClick={() => setCurrentSong(value)} className="hover:underline">{shortenText(value.name)}</p>
+                        <p 
+                            onClick={() => setCurrentSong(value)} 
+                            className="hover:underline"
+                            style={{color: highlight && index < 2 ? "#1ED760" : "#fff"}}
+                        >{shortenText(value.name)}</p>
                         <p className="opacity-60  whitespace-nowrap">{shortenText(value)}</p>
                     </div>
                     
                 </td>
             )
         }
+
         return (
             <td 
                 key={index} 
-                style={{width: renderColumnWidth(index)}}
-                className={`whitespace-wrap border-none opacity-60 px-4 py-2 text-sm cursor-pointer`}
+                style={{width: renderColumnWidth(index), color: highlight && index < 2 ? "#1ED760" : "#fff9"}}
+                className={`whitespace-wrap border-none px-4 py-2 text-sm cursor-pointer`}
             >
                 {value}
             </td>
@@ -236,10 +246,12 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, setCurren
                         {songs && songs.map((song: any, index: number) => {
                             const { track } = song;
                             const trackId = track.id + index;
+                            const highLight = currentSong?.name.toLowerCase() === track.name.toLowerCase();
+
                             return (
 
                                 <Draggable key={trackId}  draggableId={trackId} index={index}>  
-                                    {(provided: any, snapshot: any) => (  
+                                    {(provided: any, snapshot: any) => (
                                         <tr  
                                             ref={provided.innerRef}  
                                             {...provided.draggableProps}  
@@ -247,12 +259,14 @@ const SongTable:React.FC<SongTableProps> = ({playlistId, spotifyToken, setCurren
                                             className={`flex row rounded bg-transparent ${snapshot.draggingOver ? "border-b border-green-400 rounded-b-none " : "border-b-0"} ${snapshot.isDragging ? "bg-blue" : "bg-black"} cursor-pointer hover:bg-[#fff3]`}
                                             // tabIndex={0}
                                             key={trackId + index}
+                                            onMouseOver={() => setSongHovered(track)}
+                                            onMouseLeave={() => setSongHovered(null)}
                                         >  
-                                                {renderSongInfo(index + 1, 0)}
-                                                {renderSongInfo(track, 1)}
-                                                {renderSongInfo(track.album?.name, 2)}
-                                                {renderSongInfo(Moment(song.added_at).format('MMM d, YYYY'), 3)}
-                                                {renderSongInfo(msToTime(track.duration_ms), 4)}
+                                                {songHovered?.name === track.name ? renderSongInfo(<FontAwesomeIcon className="mt-3" size="sm" icon={faPlay}/>, 0, highLight) : renderSongInfo(index + 1, 0, highLight)}
+                                                {renderSongInfo(track, 1, highLight)}
+                                                {renderSongInfo(track.album?.name, 2, highLight)}
+                                                {renderSongInfo(Moment(song.added_at).format('MMM d, YYYY'), 3, highLight)}
+                                                {renderSongInfo(msToTime(track.duration_ms), 4, highLight)}
                                         </tr>  
                                     )}  
                                 </Draggable>

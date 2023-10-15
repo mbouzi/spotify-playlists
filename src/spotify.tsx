@@ -12,7 +12,9 @@ const scopes  = [
   "app-remote-control",
   'playlist-modify-public',
   'user-read-playback-state',
-  'user-read-currently-playing'
+  'user-read-currently-playing',
+  "user-read-email", 
+  "user-read-private"
 ]
 
 export const loginUrl = `${authEndpoint}?
