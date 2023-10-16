@@ -1,4 +1,4 @@
-// import { SpotifyPlaylistSong, SpotifySong } from "@/types";
+import { SpotifyPlaylist } from "@/types";
 
 export const formatDate = (date: string): string => {
     const options: Intl. DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -24,7 +24,6 @@ const shortenLogic = (text: string): string => {
 
 export const shortenText = (data: any): string => {
 
-
     if (data.artists) {
         let artistText = '';
         const artists = data.artists;
@@ -42,3 +41,12 @@ export const shortenText = (data: any): string => {
         return shortenLogic(data);
     }
 };
+
+export const renderStyles = (defaultStyles: string, isSmallScreen: boolean, condition: SpotifyPlaylist | null, styles1: string, styles2: string):string => {
+
+    if(isSmallScreen && isSmallScreen) defaultStyles+= ` ${styles1}`;
+
+    if(isSmallScreen && !condition) defaultStyles+= ` ${styles2}`;
+
+    return defaultStyles;
+}

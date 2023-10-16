@@ -5,14 +5,16 @@ import { faMusic } from '@fortawesome/free-solid-svg-icons';
 // import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
 import { SpotifyPlaylist } from '@/types/spotify';
+import { renderStyles } from '@/modules/utils';
 
 interface SidebarProps {
     playlists: SpotifyPlaylist[];
     setNewPlaylist: (playlist: SpotifyPlaylist) => void;
     currPlaylist: SpotifyPlaylist | null;
+    isSmallScreen: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currPlaylist }) => {
+const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currPlaylist, isSmallScreen }) => {
     const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
     useEffect(() => {}, []);
@@ -47,9 +49,10 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currPlayli
             return (
                 <div
                     key={playlist.id}
-                    className={`flex row rounded cursor-pointer p-1 mb-1 ${
-                        isCurrent ? 'bg-neutral-700' : ''
-                    } hover:bg-neutral-700`}
+                    className={
+                        `flex row rounded cursor-pointer p-1 mb-1 hover:bg-neutral-700
+                        ${isCurrent ? ' bg-neutral-700' : ''}
+                    `}
                     onClick={() => setNewPlaylist(playlist)}
                 >
                     {renderPlaylistImg(playlist.images[0]?.url)}
@@ -69,7 +72,15 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currPlayli
     };
 
     return (
-        <nav className={`${isCollapsed ? 'w-20' : 'w-80'} m-2flex-none rounded-lg bg-neutral-900 m-3`}>
+        <nav 
+            className={renderStyles(
+                `h-[100vh] rounded-lg flex-1 min-w-0 overflow-auto m-4 ml-0 ${isCollapsed ? 'w-20' : 'w-80'} `,
+                isSmallScreen,
+                currPlaylist,
+                "max-sm:hidden",
+                "max-sm:w-full"
+            )}
+       >
             <div className="flex justify-between row p-5">
                 <div
                     onClick={() => setIsCollapsed(!isCollapsed)}

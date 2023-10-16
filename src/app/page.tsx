@@ -1,21 +1,23 @@
 'use client'; // This is a client component 👈🏽
 
 import React, { useEffect, useReducer } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpotify } from '@fortawesome/free-brands-svg-icons';
-
-import { config } from '@fortawesome/fontawesome-svg-core';
-import '@fortawesome/fontawesome-svg-core/styles.css';
 import SpotifyWebApi from 'spotify-web-api-js';
 import { ColorExtractor } from 'react-color-extractor';
 import Link from 'next/link';
+import WindowSizeListener from 'react-window-size-listener'
 
-import { getTokenFromUrl, loginUrl } from '@/modules/spotify';
-import { SpotifyPlaylist, SpotifyUser, SpotifySong } from '@/types/spotify';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpotify } from '@fortawesome/free-brands-svg-icons';
+import { config } from '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-svg-core/styles.css';
 
 import Sidebar from '@/components/Sidebar';
 import SongTable from '@/components/SongTable';
 import SongPlayer from '@/components/SongPlayer';
+
+import { getTokenFromUrl, loginUrl } from '@/modules/spotify';
+import { SpotifyPlaylist, SpotifyUser, SpotifySong } from '@/types/spotify';
+import { renderStyles } from '@/modules/utils';
 
 config.autoAddCss = false;
 
@@ -30,7 +32,8 @@ const initialState = {
     playlistImage: '',
     bgColor: '',
     currentSong: null,
-    filter: ''
+    filter: '',
+    screenSize: "0"
 }
 
 type ACTIONTYPE = 
@@ -42,6 +45,7 @@ type ACTIONTYPE =
     | { type: "bgColor", payload: string}
     | { type: "currentSong", payload: SpotifySong | null}
     | { type: "filter", payload: string}
+    | { type: "screenSize", payload: string}
     | { type: "set_multiple", payload: any}
 ;
 
@@ -76,6 +80,8 @@ const Page = () => {
     const [state, dispatch] = useReducer<React.Reducer <any, any>>(reducer, initialState);
 
     const { user, currPlaylist, spotifyToken, currentSong, bgColor, playlists, playlistImage } = state;
+    const isSmallScreen: boolean = state.screenSize < "640";
+
 
     const renderUserInfo = (): React.ReactNode => {
 
@@ -148,12 +154,14 @@ const Page = () => {
         }
     }, [state.spotifyToken]);
 
+
     return (
         <div className="relative min-h-screen flex overflow-hidden">
+            <WindowSizeListener onResize={(windowSize) => dispatch({type: "screenSize", payload: windowSize.windowWidth})}/>
             {!user && loginModal()}
-
             {user && (
                 <Sidebar 
+                    isSmallScreen={isSmallScreen}
                      playlists={playlists} 
                      setNewPlaylist={(playlist) => dispatch({type: "set_multiple" , payload: {currPlaylist: playlist,  playlistImage : playlist.images[0]?.url}})} 
                      currPlaylist={currPlaylist} 
@@ -164,7 +172,13 @@ const Page = () => {
             {user && (
                 <main
                     style={{ background: `linear-gradient(to bottom, ${bgColor}, #000)` }}
-                    className="h-[100vh] rounded-lg flex-1 min-w-0 overflow-auto m-4 ml-0"
+                    className={renderStyles(
+                        "h-[100vh] rounded-lg flex-1 min-w-0 overflow-auto m-4 ml-0",
+                        isSmallScreen,
+                        currPlaylist,
+                        "max-sm:w-full",
+                        "max-sm:hidden"
+                    )}
                 >
                     {currPlaylist && renderPlaylistInfo()}
                     {currPlaylist && (
@@ -178,7 +192,7 @@ const Page = () => {
                 </main>
             )}
 
-            {currentSong && <SongPlayer currentSong={currentSong} token={spotifyToken} />}
+            {currentSong && <SongPlayer isSmallScreen={state.isSmallScreen} currentPlaylist={currPlaylist} currentSong={currentSong} token={spotifyToken} />}
         </div>
     );
 };

@@ -5,8 +5,8 @@ import Moment from 'moment';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
 
+import { SpotifySong, SpotifyPlaylistSong } from '@/types';
 import { msToTime, shortenText } from '@/modules/utils';
-import { playlistColumnTitles, SpotifySong, SpotifyPlaylistSong } from '@/types';
 
 
 const spotify = new SpotifyWebApi();
@@ -61,6 +61,8 @@ interface IDragResult {
     mode: 'FLUID' | 'SNAP';
     draggableId: string;
 }
+
+const playlistColumnTitles = ['#', 'Title', 'Album', 'Date added', 'Length'];
 
 const SongTable: React.FC<SongTableProps> = ({ playlistId, spotifyToken, currentSong, setCurrentSong }) => {
     const [songs, setSongs] = useState<SpotifySong[]>([]);
@@ -149,14 +151,14 @@ const SongTable: React.FC<SongTableProps> = ({ playlistId, spotifyToken, current
                     >
                         {songHovered?.name === track.name
                             ? renderSongInfo(
-                                    <FontAwesomeIcon
-                                        className="mt-3"
-                                        size="sm"
-                                        icon={faPlay}
-                                    />,
-                                    0,
-                                    highLight,
-                                )
+                                <FontAwesomeIcon
+                                    className="mt-3"
+                                    size="sm"
+                                    icon={faPlay}
+                                />,
+                                0,
+                                highLight,
+                            )
                             : renderSongInfo(index + 1, 0, highLight)}
                             {renderSongInfo(track, 1, highLight)}
                             {renderSongInfo(track.album?.name, 2, highLight)}

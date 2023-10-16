@@ -2,11 +2,14 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlay } from '@fortawesome/free-solid-svg-icons';
 
+import { SpotifySong, SpotifyPlaylist } from '@/types';
 import { msToTime } from '@/modules/utils';
 
 interface SongPlayerProps {
     token: string;
-    currentSong: any;
+    currentSong: SpotifySong;
+    currentPlaylist: SpotifyPlaylist;
+    isSmallScreen: boolean;
 }
 
 const SongPlayer: React.FC<SongPlayerProps> = (props) => {
@@ -15,7 +18,10 @@ const SongPlayer: React.FC<SongPlayerProps> = (props) => {
     // }, []);
 
     return (
-        <div className="fixed bottom-0 w-full z-10 flex bg-black p-5">
+        <div className={`
+                fixed bottom-0 w-full z-10 flex bg-black p-5
+                ${props.currentPlaylist && props.isSmallScreen ? " hidden" : ""}
+            `}>
             <div className="flex w-1/3">
                 <img src={props.currentSong.album.images[0].url} className="rounded w-[55px] h-[55px]" alt="" />
 

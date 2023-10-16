@@ -4,5 +4,3 @@
 import { ERROR_TYPE } from '../constants';
 
 export type ErrorType = (typeof ERROR_TYPE)[keyof typeof ERROR_TYPE];
-
-export const playlistColumnTitles = ['#', 'Title', 'Album', 'Date added', 'Length'];
