@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook } from '@fortawesome/free-solid-svg-icons';
-import { faMusic } from '@fortawesome/free-solid-svg-icons';
-// import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faMusic } from '@fortawesome/free-solid-svg-icons';
+
+import { AppContext, AppContextType } from '@/context/appContext';
 
 import { SpotifyPlaylist } from '@/types/spotify';
 
 interface SidebarProps {
     playlists: SpotifyPlaylist[];
     setNewPlaylist: (playlist: SpotifyPlaylist) => void;
-    currentPlaylist: SpotifyPlaylist | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPlaylist }):React.ReactElement => {
+const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist }):React.ReactElement => {
     const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+    const { currentPlaylist } = useContext(AppContext) as AppContextType;
 
     useEffect(() => {}, []);
 
@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPla
             return (
                 <div
                     key={playlist.id}
-                    className={`flex row rounded cursor-pointer p-1 mb-1 ${
+                    className={`flex rounded cursor-pointer p-1 mb-1 ${
                         isCurrent ? 'bg-neutral-700' : ''
                     } hover:bg-neutral-700`}
                     onClick={() => setNewPlaylist(playlist)}
@@ -73,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPla
             <div className="flex justify-between row p-5">
                 <div
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="flex row text-[#fff9] cursor-pointer hover:text-white"
+                    className="flex text-[#fff9] cursor-pointer hover:text-white"
                 >
                     <FontAwesomeIcon className={`${isCollapsed ? 'align-center' : ''} ml-1`} size="2x" icon={faBook} />
                     {!isCollapsed && <p className="ml-4 mt-1 font-bold">Your Library</p>}
@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPla
                 </div> */}
 
             </div>
-            <div className="p-3 h-[100vh] overflow-y-scroll">{renderPlaylists()}</div>
+            <div className="h-[100vh] p-3 pb-[20px] overflow-y-scroll">{renderPlaylists()}</div>
         </nav>
     );
 };
