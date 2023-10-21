@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useContext, Dispatch } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook } from '@fortawesome/free-solid-svg-icons';
-import { faMusic } from '@fortawesome/free-solid-svg-icons';
-// import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faMusic } from '@fortawesome/free-solid-svg-icons';
+
+import { AppContext, AppContextType } from '@/context/appContext';
 
 import { SpotifyPlaylist } from '@/types/spotify';
 
 interface SidebarProps {
     playlists: SpotifyPlaylist[];
+    sidebarCollapsed: boolean;
+    setSidebarCollapsed: Dispatch<any>;
     setNewPlaylist: (playlist: SpotifyPlaylist) => void;
-    currentPlaylist: SpotifyPlaylist | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPlaylist }):React.ReactElement => {
-    const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, sidebarCollapsed, setSidebarCollapsed }):React.ReactElement => {
+    const { currentPlaylist } = useContext(AppContext) as AppContextType;
 
     useEffect(() => {}, []);
 
@@ -47,13 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPla
             return (
                 <div
                     key={playlist.id}
-                    className={`flex row rounded cursor-pointer p-1 mb-1 ${
+                    className={`flex rounded cursor-pointer p-1 mb-1 ${
                         isCurrent ? 'bg-neutral-700' : ''
                     } hover:bg-neutral-700`}
                     onClick={() => setNewPlaylist(playlist)}
                 >
                     {renderPlaylistImg(playlist.images[0]?.url)}
-                    {!isCollapsed && (
+                    {!sidebarCollapsed && (
                         <div className="ml-3 mt-1">
                             <p className={`${isCurrent ? 'text-[var(--spotify-green)]' : 'text-[#fff]'} text-[14px]`}>
                                 {playlist.name}
@@ -69,14 +70,14 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPla
     };
 
     return (
-        <nav className={`${isCollapsed ? 'w-20' : 'w-80'} m-2flex-none rounded-lg bg-neutral-900 m-3`}>
+        <nav className={`fixed ${sidebarCollapsed ? 'w-20' : 'w-80'} h-[96%] flex-none rounded-lg bg-neutral-900 top-1 m-3 mb-10 overflow-hidden`}>
             <div className="flex justify-between row p-5">
                 <div
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="flex row text-[#fff9] cursor-pointer hover:text-white"
+                    onClick={setSidebarCollapsed}
+                    className="flex text-[var(--text-color)] cursor-pointer hover:text-white"
                 >
-                    <FontAwesomeIcon className={`${isCollapsed ? 'align-center' : ''} ml-1`} size="2x" icon={faBook} />
-                    {!isCollapsed && <p className="ml-4 mt-1 font-bold">Your Library</p>}
+                    <FontAwesomeIcon className={`${sidebarCollapsed ? 'align-center' : ''} ml-1`} size="2x" icon={faBook} />
+                    {!sidebarCollapsed && <p className="ml-4 mt-1 font-bold">Your Library</p>}
                 </div>
 
                 {/* future: for playlist creation */}
@@ -85,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, currentPla
                 </div> */}
 
             </div>
-            <div className="p-3 h-[100vh] overflow-y-scroll">{renderPlaylists()}</div>
+            <div className="h-[100vh] p-3 pb-[120px] overflow-y-scroll">{renderPlaylists()}</div>
         </nav>
     );
 };

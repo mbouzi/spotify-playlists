@@ -5,14 +5,16 @@ export const formatDate = (date: string): string => {
     return new Date(date).toLocaleDateString([],options);
 };
 
-export const msToTime = (duration: number): string => {
-    let seconds: string | number = Math.floor((duration / 1000) % 60),
-      minutes: string | number = Math.floor((duration / (1000 * 60)) % 60);
-  
-    minutes = ((minutes < 10) ? "0" + minutes : minutes);
-    seconds = ((seconds < 10) ? "0" + seconds : seconds);
-  
-    return minutes + ":" + seconds;
+export const msToTime = (duration: number| undefined): string | React.ReactNode => {
+    if(duration) {
+        let seconds: string | number = Math.floor((duration / 1000) % 60),
+        minutes: string | number = Math.floor((duration / (1000 * 60)) % 60);
+    
+        minutes = ((minutes < 10) ? "0" + minutes : minutes);
+        seconds = ((seconds < 10) ? "0" + seconds : seconds);
+        
+      return minutes + ":" + seconds;
+    }
 };
 
 const shortenLogic = (text: string): string => {
