@@ -9,6 +9,7 @@ import SongItems from './SongItems';
 import AddSong from './AddSong';
 
 import { SpotifySong } from '@/types';
+import { breakPoints } from '@/app/theme';
 
 
 const spotify = new SpotifyWebApi();
@@ -29,37 +30,54 @@ const Droppable: any = dynamic(
     { ssr: false },
 );
 
-
 interface SongTableProps {
     spotifyToken: string;
-}
-
-const renderColumnWidth = (index: number): string => {
-    if (index === 1 || index === 2) return '40%';
-    if (index > 1) return '20%';
-
-    return 'inherit';
 };
-
-const playlistColumnTitles = [
-    "#",
-    "Title",
-    "Album",
-    "Date added",
-    "Length"
-]
 
 const SongTable: React.FC<SongTableProps> = ({ spotifyToken }): React.ReactElement => {
     const [songs, setSongs] = useState<SpotifySong[]>([]);
-    const { playlistSongsFetched, setPlaylistSongsFetched, currentPlaylist } = useContext(AppContext) as AppContextType;
+    const { playlistSongsFetched, setPlaylistSongsFetched, currentPlaylist, windowSize, isMobile } = useContext(AppContext) as AppContextType;
 
+    const playlistColumnTitles = [
+        {
+            name: "#",
+            render: true
+        },
+        {
+            name: "Title",
+            render: true
+        },
+        {
+            name: "Album",
+            render: windowSize && windowSize.windowWidth > breakPoints.xlScreen
+        },
+        {
+            name: "Date added",
+            render: windowSize && windowSize.windowWidth > breakPoints.xlScreen
+        },
+        {
+            name: "Length",
+            render: true
+        }
+    ];
+
+    const renderColumnWidth = (index: number): string => {
+        const isXLScreen = windowSize && windowSize.windowWidth < breakPoints.xlScreen;
+
+        if(isXLScreen && index === 1) return '80%';
+        if (isXLScreen) return '5%';
+        if (index === 1 || index === 2) return '40%';
+        if (index > 1) return '20%';
+    
+        return 'inherit';
+    };
     
     const renderTitle = (title: string, index: number): React.ReactNode => {
         return (
             <th
                 key={index}
-                style={{ width: renderColumnWidth(index) }}
-                className={`whitespace-nowrap border-none opacity-60 text-sm font-normal text-left px-4 py-2 pt-3`}
+                style={{ width: renderColumnWidth(index)}}
+                className={`border-none opacity-60 text-sm font-normal text-left px-4 py-2 pt-3 whitespace-nowrap`}
             >
                 {title}
             </th>
@@ -81,7 +99,7 @@ const SongTable: React.FC<SongTableProps> = ({ spotifyToken }): React.ReactEleme
 
         spotify.reorderTracksInPlaylist(playlistId, rangeStart, insertBefore)
             .then(() =>  setPlaylistSongsFetched(false))
-            .catch(err => console.log("ERR:", err))
+            .catch(err => console.log("ERR:", err));
     };
 
     useEffect(() => {
@@ -91,7 +109,7 @@ const SongTable: React.FC<SongTableProps> = ({ spotifyToken }): React.ReactEleme
                 .then((data: any) => {
                     const fetchedSongs: SpotifySong[] = data?.items;
                     setSongs(fetchedSongs);
-                    setPlaylistSongsFetched(true)
+                    setPlaylistSongsFetched(true);
                 })
                 .catch((err) => console.log('ERR:', err));
         }
@@ -99,18 +117,18 @@ const SongTable: React.FC<SongTableProps> = ({ spotifyToken }): React.ReactEleme
 
     return (
         <div 
-            style={{ background: `linear-gradient(to top, #000, #0006)` }} 
+            style={{ background: !isMobile ? "linear-gradient(to top, #000, #0006)" : "" }} 
             className={`${songs.length < 20 ? "h-full" : ""} 
                 ${!playlistSongsFetched ? "opacity-50" : ""} 
-                p-5`
+                ${isMobile ? "p-0 pt-1 px-0" : "p-5"}`
             }
         >
-            <table className="w-full border-none mt-5">
-                <thead className="border-b border-[var(--border-color)]">
+            <table className={`w-full border-none ${isMobile ? "mt-2" : " mt-5"}`}>
+                {!isMobile && <thead className="border-b border-[var(--border-color)]">
                     <tr className="flex">
-                        {playlistColumnTitles.map((title: string, index: number) => renderTitle(title, index))}
+                        {playlistColumnTitles.map((titleObj, index) => titleObj.render && renderTitle(titleObj.name, index))}
                     </tr>
-                </thead>
+                </thead>}
 
                 <DragDropContext onDragEnd={(result: DropResult) => onDragEnd(result)}>
                     <Droppable droppableId="droppable">

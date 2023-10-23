@@ -12,8 +12,8 @@ import SongColumn from "./SongColumn";
 import ConditionalWrapper from './ConditionalWrapper';
 
 import { SpotifySong , SpotifyPlaylistSong} from "@/types";
-
 import { msToTime } from '@/modules/utils';
+import { breakPoints } from "@/app/theme";
 
 const spotify = new SpotifyWebApi();
 
@@ -35,20 +35,20 @@ interface SongField {
     name: string;
     value: SpotifySong | string | React.ReactNode;
     index: number;
-    render: boolean | null | undefined;
+    render: boolean | null | undefined | string;
 }
 
 const SongItems: React.FC<SongItemProps> = ({songItems, isTable, setSongResults}):React.ReactElement => {
 
-    const { currentPlaylist, playingSong, songHovered, setSongHovered, setPlaylistSongsFetched } = useContext(AppContext) as AppContextType;
+    const { currentPlaylist, playingSong, songHovered, setSongHovered, setPlaylistSongsFetched, windowSize, isMobile } = useContext(AppContext) as AppContextType;
 
     const addSong = (songUri: string | null):void => {
         if(songUri && currentPlaylist && setSongResults) {
             setPlaylistSongsFetched(false);
             spotify.addTracksToPlaylist(currentPlaylist.id, [songUri]).then(() => {
-                setPlaylistSongsFetched(true)
-                const newSongResults = songItems.filter((songItem: SpotifySong) => songUri !== songItem.uri)
-                setSongResults(newSongResults)
+                setPlaylistSongsFetched(true);
+                const newSongResults = songItems.filter((songItem: SpotifySong) => songUri !== songItem.uri);
+                setSongResults(newSongResults);
             }) .catch((err) => console.log('ERR:', err));
         };
     };
@@ -67,7 +67,7 @@ const SongItems: React.FC<SongItemProps> = ({songItems, isTable, setSongResults}
                     /> : 
                     index + 1,
                     index: 0,
-                    render: isTable
+                    render: isTable && !isMobile
                 },
                 {
                     name: "artist name",
@@ -79,13 +79,13 @@ const SongItems: React.FC<SongItemProps> = ({songItems, isTable, setSongResults}
                     name: "album name",
                     value: track.album?.name,
                     index: 2,
-                    render: isTable || !isTable
+                    render: (isTable || !isTable) && (windowSize && windowSize.windowWidth > breakPoints.xlScreen)
                 },
                 {
                     name: "date added",
                     value: Moment(song.added_at).format('MMM d, YYYY'),
                     index: 3,
-                    render: isTable
+                    render: isTable && (windowSize && windowSize.windowWidth > breakPoints.xlScreen)
                 },
                 {
                     name: "length",
@@ -108,13 +108,15 @@ const SongItems: React.FC<SongItemProps> = ({songItems, isTable, setSongResults}
                             ref={provided?.innerRef}
                             {...provided?.draggableProps}
                             {...provided?.dragHandleProps}
-                            className={`flex rounded bg-transparent ${
+                            className={`flex bg-transparent 
+                            ${
                                 snapshot?.draggingOver
-                                    ? 'border-b border-green-400 rounded-b-none '
+                                    ? 'border-b border-green-400 rounded-b-none'
                                     : 'border-b-0'
-                            } ${
-                                snapshot?.isDragging ? 'bg-blue' : 'bg-black'
-                            } hover:bg-[#fff3]`}
+                            } 
+                            ${snapshot?.isDragging ? 'bg-blue' : 'bg-black'}
+                            ${isMobile ? "" : "rounded"}
+                            hover:bg-[#fff3]`}
                             key={trackId + index}
                             onMouseOver={() => setSongHovered(track)}
                             onMouseLeave={() => setSongHovered(null)}
@@ -131,7 +133,7 @@ const SongItems: React.FC<SongItemProps> = ({songItems, isTable, setSongResults}
                         onMouseOver={() => setSongHovered(track)}
                         onMouseLeave={() => setSongHovered(null)}
                     >
-                        {children}
+                           {children}
                     </tr>     
                 }
             >
