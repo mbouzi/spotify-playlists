@@ -9,6 +9,12 @@
     --spotify-green: #1ED760;
     --text-color: #fff9;
     --border-color: #aaa3;
+
+    --xl-screen-breakpoint: 1200px;
+    --lg-screen-breakpoint: 1024px;
+    --md-screen-breakpoint: 768px;
+    --sm-screen-breakpoint: 600px;
+    --xs-breakpoint: 500px;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { Dispatch, useState, createContext } from "react";
+import { WindowSize } from "react-window-size-listener";
 
 import { SpotifyPlaylist, SpotifySong } from "@/types";
+import { breakPoints } from "@/app/theme";
 
 export interface AppContextType {
     playingSong: SpotifySong | null;
@@ -13,6 +15,9 @@ export interface AppContextType {
     setPlaylistSongsFetched: Dispatch<any>;
     currentPlaylist: SpotifyPlaylist | null;
     setCurrentPlaylist: Dispatch<any>;
+    windowSize: WindowSize | null;
+    setWindowSize: Dispatch<any>;
+    isMobile: boolean | null;
 }   
 
 export interface AppContextProps {
@@ -27,6 +32,9 @@ const AppProvider: React.FC<AppContextProps> = ({ children }):React.ReactNode =>
     const [songHovered, setSongHovered] = useState<SpotifySong | null>(null);
     const [playlistSongsFetched, setPlaylistSongsFetched] = useState<boolean>(false);
     const [currentPlaylist, setCurrentPlaylist] = useState<SpotifyPlaylist | null>(null);
+    const [windowSize, setWindowSize] = useState<WindowSize | null>(null);
+    const isMobile = windowSize && windowSize.windowWidth < breakPoints.smScreen;
+
 
     return (
         <AppContext.Provider
@@ -38,7 +46,10 @@ const AppProvider: React.FC<AppContextProps> = ({ children }):React.ReactNode =>
                 playlistSongsFetched,
                 setPlaylistSongsFetched,
                 currentPlaylist, 
-                setCurrentPlaylist
+                setCurrentPlaylist,
+                windowSize,
+                setWindowSize,
+                isMobile
             }}
         >
             {children}

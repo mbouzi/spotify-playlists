@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, Dispatch } from 'react';
+import React, { useContext, Dispatch } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook, faMusic } from '@fortawesome/free-solid-svg-icons';
 
@@ -11,12 +11,12 @@ interface SidebarProps {
     sidebarCollapsed: boolean;
     setSidebarCollapsed: Dispatch<any>;
     setNewPlaylist: (playlist: SpotifyPlaylist) => void;
+    isMobile: boolean | null;
+    userImage: string | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, sidebarCollapsed, setSidebarCollapsed }):React.ReactElement => {
+const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, sidebarCollapsed, setSidebarCollapsed, isMobile, userImage }):React.ReactElement => {
     const { currentPlaylist } = useContext(AppContext) as AppContextType;
-
-    useEffect(() => {}, []);
 
     const renderPlaylistImg = (image: string): React.ReactNode => {
         if (image) {
@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, sidebarCol
     const renderPlaylists = (): React.ReactNode => {
 
         return playlists.map((playlist: SpotifyPlaylist): React.ReactNode => {
-            const isCurrent: boolean = currentPlaylist?.name === playlist.name;
+            const isCurrent: boolean = (currentPlaylist?.name === playlist.name) && !isMobile;
 
             return (
                 <div
@@ -69,15 +69,23 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists, setNewPlaylist, sidebarCol
         });
     };
 
+    const renderWidth = () => {
+        if(sidebarCollapsed) return "w-20";
+        if(isMobile) return "w-[94%]";
+
+        return "w-80";
+    };
+
     return (
-        <nav className={`fixed ${sidebarCollapsed ? 'w-20' : 'w-80'} h-[96%] flex-none rounded-lg bg-neutral-900 top-1 m-3 mb-10 overflow-hidden`}>
+        <nav className={`fixed ${renderWidth()} h-[96%] flex-none rounded-lg bg-neutral-900 top-1 m-3 mb-10 overflow-hidden`}>
             <div className="flex justify-between row p-5">
                 <div
                     onClick={setSidebarCollapsed}
-                    className="flex text-[var(--text-color)] cursor-pointer hover:text-white"
+                    className={`flex ${isMobile ? "text-white" : "text-[var(--text-color)]"} cursor-pointer hover:text-white`}
                 >
-                    <FontAwesomeIcon className={`${sidebarCollapsed ? 'align-center' : ''} ml-1`} size="2x" icon={faBook} />
-                    {!sidebarCollapsed && <p className="ml-4 mt-1 font-bold">Your Library</p>}
+                    {isMobile && <div style={{backgroundImage: `url(${userImage})`}} className="bg-cover bg-center w-10 h-10 rounded-full"></div>}
+                    {!isMobile && <FontAwesomeIcon className={`${sidebarCollapsed ? 'align-center' : ''} ml-1`} size="2x" icon={faBook} />}
+                    {!sidebarCollapsed && <p className="ml-4 mt-2 font-bold">Your Library</p>}
                 </div>
 
                 {/* future: for playlist creation */}
