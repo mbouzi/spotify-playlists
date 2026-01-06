@@ -9,7 +9,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import SpotifyWebApi from 'spotify-web-api-js';
 import { ColorExtractor } from 'react-color-extractor';
 import WindowSizeListener, { WindowSize } from 'react-window-size-listener';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 
 import { AppContext, AppContextType } from '@/context/appContext';
 import Sidebar from '@/components/Sidebar';
@@ -84,28 +84,37 @@ const Home = () => {
     const [user, setUser] = useState<SpotifyUser | null>(null);
     const [spotifyToken, setSpotifyToken] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true); // Add loading state
+    const [isClient, setIsClient] = useState(false); // Track client-side mount
 
-    const isAuthed = !!user;
+    // const router = useRouter();
 
-    const showPlaylistSidebar = isAuthed && (!isMobile || (isMobile && listView));
-    const showCurrentPlaylist = isAuthed && ((!isMobile && !!currentPlaylist) || (isMobile && !listView));
+    // Wait for client-side mount to avoid hydration issues
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
-    const router = useRouter();
+    // Only calculate show logic when we have window size data
+    const showSidebar = isClient && user && isMobile !== null && (!isMobile || (isMobile && listView));
+    const showPlaylist =
+        isClient && user && currentPlaylist && isMobile !== null && (!isMobile || (isMobile && !listView));
 
     useEffect(() => {
         const fetchSpotifyData = async () => {
             const code = getCodeFromUrl();
+
             let accessToken = localStorage.getItem('spotifyAccessToken');
+
             try {
                 // If we have a code in the URL, exchange it for a token
                 if (code && !accessToken) {
                     const tokenData = await fetchAccessToken(code);
                     accessToken = tokenData.access_token;
+
                     // @ts-expect-error fix later
                     localStorage.setItem('spotifyAccessToken', accessToken);
                     if (tokenData.refresh_token) localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
 
-                    // Clean the URL and redirect to home
+                    // Clean the URL using window.history to avoid remounting
                     window.history.replaceState({}, document.title, '/');
                 }
 
@@ -119,9 +128,11 @@ const Home = () => {
 
                 const spotifyUser: SpotifyUser = await spotify.getMe();
                 setUser(spotifyUser);
+
                 // @ts-expect-error fix later
                 const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
                 dispatch({ type: 'playlists', payload: fetchedPlaylists });
+
                 if (!currentPlaylist && fetchedPlaylists.length > 0) {
                     setCurrentPlaylist(fetchedPlaylists[0]);
                     dispatch({ type: 'listView', payload: false }); // ensures playlist shows
@@ -129,6 +140,7 @@ const Home = () => {
 
                 setIsLoading(false);
             } catch (err) {
+                // console.error('Spotify Auth Error:', err);
                 // Clear invalid token
                 localStorage.removeItem('spotifyAccessToken');
                 localStorage.removeItem('spotifyRefreshToken');
@@ -137,7 +149,7 @@ const Home = () => {
         };
 
         fetchSpotifyData();
-    }, [router, currentPlaylist, setCurrentPlaylist]);
+    }, []);
 
     const handleSetPlaylist = (playlist: SpotifyPlaylist) => {
         setCurrentPlaylist(playlist);
@@ -217,6 +229,7 @@ const Home = () => {
             </div>
         );
     }
+
     // Show login modal only if not authenticated
     if (!user) {
         return (
@@ -231,7 +244,7 @@ const Home = () => {
         <div className="relative min-h-screen flex overflow-hidden">
             <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
 
-            {showPlaylistSidebar && (
+            {showSidebar && (
                 <Sidebar
                     isMobile={isMobile}
                     playlists={playlists}
@@ -242,7 +255,7 @@ const Home = () => {
                 />
             )}
 
-            {showCurrentPlaylist && (
+            {showPlaylist && (
                 <main
                     style={{
                         background: isMobile ? `linear-gradient(to top, #000, 85%, ${bgColor})` : bgColor,
