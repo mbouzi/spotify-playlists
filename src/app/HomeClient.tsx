@@ -94,13 +94,11 @@ const Home = () => {
         const fetchSpotifyData = async () => {
             const code = getCodeFromUrl();
             let accessToken = localStorage.getItem('spotifyAccessToken');
-
             try {
                 // If we have a code in the URL, exchange it for a token
                 if (code && !accessToken) {
                     const tokenData = await fetchAccessToken(code);
                     accessToken = tokenData.access_token;
-
                     // @ts-expect-error fix later
                     localStorage.setItem('spotifyAccessToken', accessToken);
                     if (tokenData.refresh_token) localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
@@ -122,7 +120,6 @@ const Home = () => {
                 // @ts-expect-error fix later
                 const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
                 dispatch({ type: 'playlists', payload: fetchedPlaylists });
-
                 if (!currentPlaylist && fetchedPlaylists.length > 0) {
                     setCurrentPlaylist(fetchedPlaylists[0]);
                     dispatch({ type: 'listView', payload: false }); // ensures playlist shows
@@ -130,7 +127,6 @@ const Home = () => {
 
                 setIsLoading(false);
             } catch (err) {
-                console.error('Spotify Auth Error:', err);
                 // Clear invalid token
                 localStorage.removeItem('spotifyAccessToken');
                 localStorage.removeItem('spotifyRefreshToken');
@@ -219,7 +215,6 @@ const Home = () => {
             </div>
         );
     }
-
     // Show login modal only if not authenticated
     if (!user) {
         return (
