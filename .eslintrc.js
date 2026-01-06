@@ -14,11 +14,14 @@ module.exports = {
   },
   extends: [
     "plugin:react/recommended", // Uses the recommended rules from @eslint-plugin-react
-    "plugin:@typescript-eslint/recommended" // Uses the recommended rules from @typescript-eslint/eslint-plugin
+    "plugin:@typescript-eslint/recommended", // Uses the recommended rules from @typescript-eslint/eslint-plugin
+    'next/core-web-vitals',
   ],
   rules: {
     // Place to specify ESLint rules. Can be used to overwrite rules specified from the extended configs
     // e.g. "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-explicit-any": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    'react/react-in-jsx-scope': 'off',
+
   },
 };
