@@ -9,7 +9,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import SpotifyWebApi from 'spotify-web-api-js';
 import { ColorExtractor } from 'react-color-extractor';
 import WindowSizeListener, { WindowSize } from 'react-window-size-listener';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 
 import { AppContext, AppContextType } from '@/context/appContext';
 import Sidebar from '@/components/Sidebar';
@@ -83,8 +83,9 @@ const Home = () => {
     // Local state for Spotify user & token
     const [user, setUser] = useState<SpotifyUser | null>(null);
     const [spotifyToken, setSpotifyToken] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(true); // Add loading state
 
-    const router = useRouter();
+    // const router = useRouter();
 
     const showSidebar = (user && !isMobile) || (user && listView && isMobile);
     const showPlaylist = (user && currentPlaylist && !isMobile) || (user && isMobile && !listView);
@@ -105,7 +106,7 @@ const Home = () => {
                 }
 
                 if (!accessToken) {
-                    router.push('/');
+                    setIsLoading(false);
                     return;
                 }
 
@@ -124,9 +125,13 @@ const Home = () => {
                 }
 
                 window.history.replaceState({}, document.title, '/');
+                setIsLoading(false);
             } catch (err) {
                 console.error('Spotify Auth Error:', err);
-                router.push('/');
+                // Clear invalid token
+                localStorage.removeItem('spotifyAccessToken');
+                localStorage.removeItem('spotifyRefreshToken');
+                setIsLoading(false);
             }
         };
 
@@ -202,11 +207,30 @@ const Home = () => {
         return 'ml-[345px]';
     };
 
+    // Show loading state
+    if (isLoading) {
+        return (
+            <div className="relative min-h-screen flex overflow-hidden items-center justify-center">
+                <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
+                <p className="text-white">Loading...</p>
+            </div>
+        );
+    }
+
+    // Show login modal only if not authenticated
+    if (!user) {
+        return (
+            <div className="relative min-h-screen flex overflow-hidden">
+                <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
+                <LoginModal />
+            </div>
+        );
+    }
+
+    // Main authenticated UI
     return (
         <div className="relative min-h-screen flex overflow-hidden">
             <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
-
-            {!user && <LoginModal />}
 
             {showSidebar && (
                 <Sidebar
@@ -228,9 +252,10 @@ const Home = () => {
                 >
                     {isMobile && (
                         <FontAwesomeIcon
-                            onClick={() =>
-                                dispatch({ type: 'set_multiple', payload: { currentPlaylist: null, listView: true } })
-                            }
+                            onClick={() => {
+                                setCurrentPlaylist(null);
+                                dispatch({ type: 'listView', payload: true });
+                            }}
                             className="ml-4 mt-4 text-[var(--text-color)] cursor-pointer hover:text-white"
                             size="xl"
                             icon={faChevronLeft}
