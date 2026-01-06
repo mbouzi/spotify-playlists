@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { Dispatch, useState, createContext } from "react";
-import { WindowSize } from "react-window-size-listener";
+import React, { Dispatch, useState, createContext } from 'react';
+import { WindowSize } from 'react-window-size-listener';
 
-import { SpotifyPlaylist, SpotifySong } from "@/types";
-import { breakPoints } from "@/app/theme";
+import { SpotifyPlaylist, SpotifySong } from '@/types';
+import { breakPoints } from '@/app/theme';
 
 export interface AppContextType {
     playingSong: SpotifySong | null;
@@ -18,7 +18,7 @@ export interface AppContextType {
     windowSize: WindowSize | null;
     setWindowSize: Dispatch<any>;
     isMobile: boolean | null;
-}   
+}
 
 export interface AppContextProps {
     children: React.ReactNode;
@@ -26,15 +26,13 @@ export interface AppContextProps {
 
 export const AppContext = createContext<AppContextType | null>(null);
 
-const AppProvider: React.FC<AppContextProps> = ({ children }):React.ReactNode => {
-
+const AppProvider: React.FC<AppContextProps> = ({ children }): React.ReactNode => {
     const [playingSong, setPlayingSong] = useState<SpotifySong | null>(null);
     const [songHovered, setSongHovered] = useState<SpotifySong | null>(null);
     const [playlistSongsFetched, setPlaylistSongsFetched] = useState<boolean>(false);
     const [currentPlaylist, setCurrentPlaylist] = useState<SpotifyPlaylist | null>(null);
     const [windowSize, setWindowSize] = useState<WindowSize | null>(null);
-    const isMobile = windowSize && windowSize.windowWidth < breakPoints.smScreen;
-
+    const isMobile = windowSize && windowSize.windowWidth < breakPoints.mdScreen;
 
     return (
         <AppContext.Provider
@@ -45,11 +43,11 @@ const AppProvider: React.FC<AppContextProps> = ({ children }):React.ReactNode =>
                 setSongHovered,
                 playlistSongsFetched,
                 setPlaylistSongsFetched,
-                currentPlaylist, 
+                currentPlaylist,
                 setCurrentPlaylist,
                 windowSize,
                 setWindowSize,
-                isMobile
+                isMobile,
             }}
         >
             {children}
