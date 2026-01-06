@@ -226,7 +226,7 @@ const Home = () => {
     }
 
     const showSideBar = (showSidebar && !isMobile) || (!showPlaylist && showSidebar && isMobile);
-    const showUserPlaylist = (showPlaylist && !isMobile) || (!showSidebar && showPlaylist && isMobile);
+    const showCurrentPlaylist = (showPlaylist && !isMobile) || (!showSidebar && showPlaylist && isMobile);
     return (
         <div className="relative min-h-screen flex overflow-hidden">
             <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
@@ -242,7 +242,7 @@ const Home = () => {
                 />
             )}
 
-            {showUserPlaylist && (
+            {showCurrentPlaylist && (
                 <main
                     style={{
                         background: isMobile ? `linear-gradient(to top, #000, 85%, ${bgColor})` : bgColor,
