@@ -105,8 +105,8 @@ const Home = () => {
                     localStorage.setItem('spotifyAccessToken', accessToken);
                     if (tokenData.refresh_token) localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
 
-                    // Clean the URL using Next.js router
-                    router.replace('/');
+                    // Clean the URL and redirect to home
+                    window.history.replaceState({}, document.title, '/');
                 }
 
                 if (!accessToken) {
