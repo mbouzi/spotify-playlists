@@ -9,7 +9,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css';
 import SpotifyWebApi from 'spotify-web-api-js';
 import { ColorExtractor } from 'react-color-extractor';
 import WindowSizeListener, { WindowSize } from 'react-window-size-listener';
-// import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { AppContext, AppContextType } from '@/context/appContext';
 import Sidebar from '@/components/Sidebar';
@@ -85,7 +85,7 @@ const Home = () => {
     const [spotifyToken, setSpotifyToken] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true); // Add loading state
 
-    // const router = useRouter();
+    const router = useRouter();
 
     const showSidebar = (user && !isMobile) || (user && listView && isMobile);
     const showPlaylist = (user && currentPlaylist && !isMobile) || (user && isMobile && !listView);
@@ -96,13 +96,17 @@ const Home = () => {
             let accessToken = localStorage.getItem('spotifyAccessToken');
 
             try {
-                if (!accessToken && code) {
+                // If we have a code in the URL, exchange it for a token
+                if (code && !accessToken) {
                     const tokenData = await fetchAccessToken(code);
                     accessToken = tokenData.access_token;
 
                     // @ts-expect-error fix later
                     localStorage.setItem('spotifyAccessToken', accessToken);
                     if (tokenData.refresh_token) localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
+
+                    // Clean the URL using Next.js router
+                    router.replace('/');
                 }
 
                 if (!accessToken) {
@@ -124,7 +128,6 @@ const Home = () => {
                     dispatch({ type: 'listView', payload: false }); // ensures playlist shows
                 }
 
-                window.history.replaceState({}, document.title, '/');
                 setIsLoading(false);
             } catch (err) {
                 console.error('Spotify Auth Error:', err);
@@ -136,7 +139,7 @@ const Home = () => {
         };
 
         fetchSpotifyData();
-    }, []);
+    }, [router, currentPlaylist, setCurrentPlaylist]);
 
     const handleSetPlaylist = (playlist: SpotifyPlaylist) => {
         setCurrentPlaylist(playlist);
