@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useReducer, useContext } from 'react';
+import React, { useEffect, useReducer, useContext, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpotify } from '@fortawesome/free-brands-svg-icons';
 import { config } from '@fortawesome/fontawesome-svg-core';
@@ -23,25 +23,20 @@ config.autoAddCss = false;
 
 const spotify = new SpotifyWebApi();
 
+// Local reducer for UI state (playlists, bgColor, sidebar, etc.)
 const initialState = {
-    spotifyToken: '',
-    user: null,
-    playlists: [],
+    playlists: [] as SpotifyPlaylist[],
     bgColor: '',
-    filter: '',
     sidebarCollapsed: false,
     listView: true,
 };
 
 type ACTIONTYPE =
-    | { type: 'spotifyToken'; payload: string }
-    | { type: 'user'; payload: SpotifyUser | null }
     | { type: 'playlists'; payload: SpotifyPlaylist[] }
     | { type: 'bgColor'; payload: string }
-    | { type: 'filter'; payload: string }
     | { type: 'sidebarCollapsed'; payload: boolean }
     | { type: 'listView'; payload: boolean }
-    | { type: 'set_multiple'; payload: any };
+    | { type: 'set_multiple'; payload: Partial<typeof initialState> };
 
 function reducer(state: typeof initialState, action: ACTIONTYPE): typeof initialState {
     const { type, payload } = action;
@@ -55,7 +50,7 @@ function reducer(state: typeof initialState, action: ACTIONTYPE): typeof initial
     }
 }
 
-// Login button/modal
+// Login modal/button
 const LoginModal = () => {
     const handleLogin = async () => {
         const loginUrl = await getLoginUrl();
@@ -79,68 +74,69 @@ const LoginModal = () => {
 
 const Home = () => {
     const [state, dispatch] = useReducer<React.Reducer<any, any>>(reducer, initialState);
-    const { user, spotifyToken, bgColor, playlists, sidebarCollapsed, listView } = state;
-    const { playingSong, currentPlaylist, setCurrentPlaylist, setWindowSize, isMobile } = useContext(
+    const { playlists, bgColor, sidebarCollapsed, listView } = state;
+
+    const { currentPlaylist, setCurrentPlaylist, playingSong, setWindowSize, isMobile } = useContext(
         AppContext,
     ) as AppContextType;
+
+    // Local state for Spotify user & token
+    const [user, setUser] = useState<SpotifyUser | null>(null);
+    const [spotifyToken, setSpotifyToken] = useState<string>('');
 
     const router = useRouter();
 
     const showSidebar = (user && !isMobile) || (user && listView && isMobile);
     const showPlaylist = (user && currentPlaylist && !isMobile) || (user && isMobile && !listView);
 
-    // Handle Spotify login + PKCE + token persistence
+    // Fetch Spotify data and handle PKCE/login
     useEffect(() => {
         let fetched = false;
 
         const fetchSpotifyData = async () => {
             try {
                 const code = getCodeFromUrl();
-
                 let accessToken = localStorage.getItem('spotifyAccessToken');
 
-                // Exchange code for token if no access token
                 if (!accessToken && code && !fetched) {
                     const tokenData = await fetchAccessToken(code);
                     accessToken = tokenData.access_token;
-                    // @ts-expect-error don't care
-                    localStorage.setItem('spotifyAccessToken', accessToken);
-                    if (tokenData.refresh_token) {
-                        localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
-                    }
 
-                    dispatch({ type: 'spotifyToken', payload: accessToken });
+                    // @ts-expect-error fix later
+                    localStorage.setItem('spotifyAccessToken', accessToken);
+                    if (tokenData.refresh_token) localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
+
+                    // @ts-expect-error fix later
+                    setSpotifyToken(accessToken);
                     spotify.setAccessToken(accessToken);
 
-                    const user: SpotifyUser = await spotify.getMe();
-                    dispatch({ type: 'user', payload: user });
-                    // @ts-expect-error don't care
-                    const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(user.id)).items;
+                    const spotifyUser: SpotifyUser = await spotify.getMe();
+                    setUser(spotifyUser);
+                    // @ts-expect-error fix later
+                    const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
                     if (!isMobile) setCurrentPlaylist(fetchedPlaylists[0]);
                     dispatch({ type: 'playlists', payload: fetchedPlaylists });
 
                     fetched = true;
 
-                    // Clean URL after PKCE code
                     window.history.replaceState({}, document.title, '/');
                 }
 
-                // Use existing access token
                 if (accessToken && !fetched) {
-                    dispatch({ type: 'spotifyToken', payload: accessToken });
+                    setSpotifyToken(accessToken);
                     spotify.setAccessToken(accessToken);
 
-                    const user: SpotifyUser = await spotify.getMe();
-                    dispatch({ type: 'user', payload: user });
-                    // @ts-expect-error don't care
-                    const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(user.id)).items;
+                    const spotifyUser: SpotifyUser = await spotify.getMe();
+                    setUser(spotifyUser);
+
+                    // @ts-expect-error fix later
+                    const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
                     if (!isMobile) setCurrentPlaylist(fetchedPlaylists[0]);
                     dispatch({ type: 'playlists', payload: fetchedPlaylists });
 
                     fetched = true;
                 }
 
-                // Redirect to login if no token/code
                 if (!accessToken && !code) {
                     router.push('/');
                 }
@@ -153,13 +149,18 @@ const Home = () => {
         fetchSpotifyData();
     }, [router, isMobile, setCurrentPlaylist]);
 
-    // Helper to render user info in playlist
+    const handleSetPlaylist = (playlist: SpotifyPlaylist) => {
+        setCurrentPlaylist(playlist);
+        dispatch({ type: 'listView', payload: false });
+    };
+
     const renderUserInfo = (): React.ReactNode => {
         if (user && currentPlaylist) {
             return (
                 <div className={`flex absolute items-center ${isMobile ? 'top-11' : ''} bottom-0`}>
                     <div
                         className="w-6 h-6 rounded-full"
+                        // @ts-expect-error fix later
                         style={{ background: `url(${user.images[0]?.url})`, backgroundSize: 'cover' }}
                     />
                     <p className="font-bold text-sm ml-2 whitespace-nowrap">{user.display_name}</p>
@@ -172,7 +173,6 @@ const Home = () => {
         }
     };
 
-    // Render playlist header + image
     const renderPlaylistInfo = (): React.ReactNode => {
         const playlistImage = currentPlaylist?.images[0]?.url;
 
@@ -218,14 +218,10 @@ const Home = () => {
         return 'ml-[345px]';
     };
 
-    const handleSetPlaylist = (playlist: SpotifyPlaylist) => {
-        setCurrentPlaylist(playlist);
-        dispatch({ type: 'listView', payload: false });
-    };
-
     return (
         <div className="relative min-h-screen flex overflow-hidden">
             <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
+
             {!user && <LoginModal />}
 
             {showSidebar && (
@@ -251,7 +247,7 @@ const Home = () => {
                             onClick={() =>
                                 dispatch({ type: 'set_multiple', payload: { currentPlaylist: null, listView: true } })
                             }
-                            className={`ml-4 mt-4 text-[var(--text-color)] cursor-pointer hover:text-white`}
+                            className="ml-4 mt-4 text-[var(--text-color)] cursor-pointer hover:text-white"
                             size="xl"
                             icon={faChevronLeft}
                         />
@@ -260,6 +256,7 @@ const Home = () => {
                     {currentPlaylist && <SongTable spotifyToken={spotifyToken} />}
                 </main>
             )}
+
             {playingSong && <SongPlayer />}
         </div>
     );
