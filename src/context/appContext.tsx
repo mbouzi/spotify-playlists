@@ -32,7 +32,7 @@ const AppProvider: React.FC<AppContextProps> = ({ children }): React.ReactNode =
     const [playlistSongsFetched, setPlaylistSongsFetched] = useState<boolean>(false);
     const [currentPlaylist, setCurrentPlaylist] = useState<SpotifyPlaylist | null>(null);
     const [windowSize, setWindowSize] = useState<WindowSize | null>(null);
-    const isMobile = windowSize?.windowWidth !== undefined ? windowSize.windowWidth < breakPoints.smScreen : false;
+    const isMobile = windowSize?.windowWidth !== undefined ? windowSize.windowWidth < breakPoints.smScreen : null;
 
     return (
         <AppContext.Provider
