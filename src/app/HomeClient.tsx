@@ -225,12 +225,13 @@ const Home = () => {
         );
     }
 
-    // Main authenticated UI
+    const showSideBar = (showSidebar && !isMobile) || (!showPlaylist && showSidebar && isMobile);
+    const showUserPlaylist = (showPlaylist && !isMobile) || (!showSidebar && showPlaylist && isMobile);
     return (
         <div className="relative min-h-screen flex overflow-hidden">
             <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
 
-            {showSidebar && (
+            {showSideBar && (
                 <Sidebar
                     isMobile={isMobile}
                     playlists={playlists}
@@ -241,7 +242,7 @@ const Home = () => {
                 />
             )}
 
-            {showPlaylist && (
+            {showUserPlaylist && (
                 <main
                     style={{
                         background: isMobile ? `linear-gradient(to top, #000, 85%, ${bgColor})` : bgColor,
