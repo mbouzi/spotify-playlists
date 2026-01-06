@@ -89,57 +89,41 @@ const Home = () => {
     const showSidebar = (user && !isMobile) || (user && listView && isMobile);
     const showPlaylist = (user && currentPlaylist && !isMobile) || (user && isMobile && !listView);
 
-    // Fetch Spotify data and handle PKCE/login
     useEffect(() => {
-        let fetched = false;
-
         const fetchSpotifyData = async () => {
-            try {
-                const code = getCodeFromUrl();
-                let accessToken = localStorage.getItem('spotifyAccessToken');
+            const code = getCodeFromUrl();
+            let accessToken = localStorage.getItem('spotifyAccessToken');
 
-                if (!accessToken && code && !fetched) {
+            try {
+                if (!accessToken && code) {
                     const tokenData = await fetchAccessToken(code);
                     accessToken = tokenData.access_token;
 
                     // @ts-expect-error fix later
                     localStorage.setItem('spotifyAccessToken', accessToken);
                     if (tokenData.refresh_token) localStorage.setItem('spotifyRefreshToken', tokenData.refresh_token);
-
-                    // @ts-expect-error fix later
-                    setSpotifyToken(accessToken);
-                    spotify.setAccessToken(accessToken);
-
-                    const spotifyUser: SpotifyUser = await spotify.getMe();
-                    setUser(spotifyUser);
-                    // @ts-expect-error fix later
-                    const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
-                    if (!isMobile) setCurrentPlaylist(fetchedPlaylists[0]);
-                    dispatch({ type: 'playlists', payload: fetchedPlaylists });
-
-                    fetched = true;
-
-                    window.history.replaceState({}, document.title, '/');
                 }
 
-                if (accessToken && !fetched) {
-                    setSpotifyToken(accessToken);
-                    spotify.setAccessToken(accessToken);
-
-                    const spotifyUser: SpotifyUser = await spotify.getMe();
-                    setUser(spotifyUser);
-
-                    // @ts-expect-error fix later
-                    const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
-                    if (!isMobile) setCurrentPlaylist(fetchedPlaylists[0]);
-                    dispatch({ type: 'playlists', payload: fetchedPlaylists });
-
-                    fetched = true;
-                }
-
-                if (!accessToken && !code) {
+                if (!accessToken) {
                     router.push('/');
+                    return;
                 }
+
+                setSpotifyToken(accessToken);
+                spotify.setAccessToken(accessToken);
+
+                const spotifyUser: SpotifyUser = await spotify.getMe();
+                setUser(spotifyUser);
+                // @ts-expect-error fix later
+                const fetchedPlaylists: SpotifyPlaylist[] = (await spotify.getUserPlaylists(spotifyUser.id)).items;
+                dispatch({ type: 'playlists', payload: fetchedPlaylists });
+
+                if (!currentPlaylist && fetchedPlaylists.length > 0) {
+                    setCurrentPlaylist(fetchedPlaylists[0]);
+                    dispatch({ type: 'listView', payload: false }); // ensures playlist shows
+                }
+
+                window.history.replaceState({}, document.title, '/');
             } catch (err) {
                 console.error('Spotify Auth Error:', err);
                 router.push('/');
@@ -147,7 +131,7 @@ const Home = () => {
         };
 
         fetchSpotifyData();
-    }, [router, isMobile, setCurrentPlaylist]);
+    }, []);
 
     const handleSetPlaylist = (playlist: SpotifyPlaylist) => {
         setCurrentPlaylist(playlist);
