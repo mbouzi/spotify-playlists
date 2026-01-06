@@ -85,10 +85,12 @@ const Home = () => {
     const [spotifyToken, setSpotifyToken] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true); // Add loading state
 
-    const router = useRouter();
+    const isAuthed = !!user;
 
-    const showSidebar = (user && !isMobile) || (user && listView && isMobile);
-    const showPlaylist = (user && currentPlaylist && !isMobile) || (user && isMobile && !listView);
+    const showPlaylistSidebar = isAuthed && (!isMobile || (isMobile && listView));
+    const showCurrentPlaylist = isAuthed && ((!isMobile && !!currentPlaylist) || (isMobile && !listView));
+
+    const router = useRouter();
 
     useEffect(() => {
         const fetchSpotifyData = async () => {
@@ -225,13 +227,11 @@ const Home = () => {
         );
     }
 
-    const showSideBar = (showSidebar && !isMobile) || (!showPlaylist && showSidebar && isMobile);
-    const showCurrentPlaylist = (showPlaylist && !isMobile) || (!showSidebar && showPlaylist && isMobile);
     return (
         <div className="relative min-h-screen flex overflow-hidden">
             <WindowSizeListener onResize={(windowSize: WindowSize) => setWindowSize(windowSize)} />
 
-            {showSideBar && (
+            {showPlaylistSidebar && (
                 <Sidebar
                     isMobile={isMobile}
                     playlists={playlists}
